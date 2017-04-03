@@ -192,8 +192,13 @@ struct i2c_algorithm {
 #define EPROTONOSUPPORT 93
 #define ETIMEDOUT   110
 
+#ifndef FALSE
 #define FALSE  0
+#endif
+
+#ifndef TRUE
 #define TRUE   1
+#endif
 
 #define USEC_PER_SEC   1000000L
 

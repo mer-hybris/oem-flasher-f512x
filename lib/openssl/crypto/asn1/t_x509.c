@@ -295,7 +295,9 @@ int X509_signature_print(BIO *bp, X509_ALGOR *sigalg, ASN1_STRING *sig)
 	for (i=0; i<n; i++)
 		{
 		if ((i%18) == 0)
+		{
 			if (BIO_write(bp,"\n        ",9) <= 0) return 0;
+		}
 			if (BIO_printf(bp,"%02x%s",s[i],
 				((i+1) == n)?"":":") <= 0) return 0;
 		}

@@ -6,6 +6,8 @@ ENABLE_THUMB?=true
 DEFINES += \
 	ARM_CPU_$(ARM_CPU)=1
 
+CFLAGS += -marm
+
 # do set some options based on the cpu core
 HANDLED_CORE := false
 ifeq ($(ARM_CPU),cortex-a8)
