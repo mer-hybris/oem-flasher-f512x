@@ -1254,6 +1254,32 @@ int dev_tree_add_mem_info(void *fdt, uint32_t offset, uint64_t addr, uint64_t si
 	return ret;
 }
 
+char *get_dev_tree_cmdline(void *fdt)
+{
+	uint32_t offset;
+	const void *prop = NULL;
+	int len;
+	int tmp;
+	char *bootargs = "";
+
+	tmp = fdt_path_offset(fdt, "/chosen");
+	if (tmp < 0)
+		return NULL;
+
+	offset = tmp;
+
+	prop = fdt_getprop(fdt, offset, "bootargs", &len);
+	if (prop && len > 0) {
+		bootargs = (char *) malloc(sizeof(char) * len);
+		ASSERT(bootargs);
+		strlcpy(bootargs, prop, len);
+	} else {
+		dprintf(INFO, "bootargs does not exist in device tree\n");
+	}
+
+	return bootargs;
+}
+
 /* Top level function that updates the device tree. */
 int update_device_tree(void *fdt, const char *cmdline,
 					   void *ramdisk, uint32_t ramdisk_size)
