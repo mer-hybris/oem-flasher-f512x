@@ -23,7 +23,11 @@ else
 ENABLE_SECAPP_LOADER := 1
 ENABLE_RPMB_SUPPORT := 1
 #enable fbcon display menu
+ifeq ($(OEM_FLASHER),1)
+ENABLE_FBCON_DISPLAY_MSG := 0
+else
 ENABLE_FBCON_DISPLAY_MSG := 1
+endif
 endif
 endif
 

@@ -3003,10 +3003,21 @@ void cmd_flash(const char *arg, void *data, unsigned sz)
 		return;
 	}
 #endif
+
+#ifdef OEM_FLASHER
+	if (strncmp(arg, "oem", 3) != 0) {
+		fastboot_fail(arg);
+	}
+#endif
+
 	if(target_is_emmc_boot())
 		cmd_flash_mmc(arg, data, sz);
 	else
 		cmd_flash_nand(arg, data, sz);
+
+#ifdef OEM_FLASHER
+	reboot_device(FASTBOOT_MODE);
+#endif
 }
 
 void cmd_continue(const char *arg, void *data, unsigned sz)
@@ -3446,11 +3457,16 @@ bool is_device_locked()
 	return device.is_unlocked ? false:true;
 }
 
+#define QUOTE(x) #x
+#define STRINGIFY(x) QUOTE(x)
+
 /* register commands and variables for fastboot */
 void aboot_fastboot_register_commands(void)
 {
 	int i;
+#ifndef OEM_FLASHER
 	char hw_platform_buf[MAX_RSP_SIZE];
+#endif
 
 	struct fastboot_cmd_desc cmd_list[] = {
 						/* By default the enabled list is empty. */
@@ -3488,8 +3504,12 @@ void aboot_fastboot_register_commands(void)
 		fastboot_register(cmd_list[i].name,cmd_list[i].cb);
 
 	/* publish variables and their values */
+#if OEM_FLASHER_F5121
+	fastboot_publish("product",  "F5121");
+#else
 	fastboot_publish("product",  TARGET(BOARD));
 	fastboot_publish("kernel",   "lk");
+#endif
 	fastboot_publish("serialno", sn_buf);
 
 	/*
@@ -3505,6 +3525,7 @@ void aboot_fastboot_register_commands(void)
 	snprintf(max_download_size, MAX_RSP_SIZE, "\t0x%x",
 			target_get_max_flash_size());
 	fastboot_publish("max-download-size", (const char *) max_download_size);
+#ifndef OEM_FLASHER
 	/* Is the charger screen check enabled */
 	snprintf(charger_screen_enabled, MAX_RSP_SIZE, "%d",
 			device.charger_screen_enabled);
@@ -3528,13 +3549,22 @@ void aboot_fastboot_register_commands(void)
 	fastboot_publish("battery-voltage", (const char *) battery_voltage);
 	fastboot_publish("battery-soc-ok", target_battery_soc_ok()? "yes":"no");
 #endif
+#endif
 }
+
+extern char *get_dev_tree_cmdline(void *fdt);
 
 void aboot_init(const struct app_descriptor *app)
 {
 	unsigned reboot_mode = 0;
 	unsigned hard_reboot_mode = 0;
 	bool boot_into_fastboot = false;
+	char *aboot_cmdline;
+	char *sn_ptr;
+
+#ifdef OEM_FLASHER
+	boot_into_fastboot = true;
+#endif
 
 	/* Setup page size information for nv storage */
 	if (target_is_emmc_boot())
@@ -3566,7 +3596,30 @@ void aboot_init(const struct app_descriptor *app)
 #endif
 #endif
 
+#ifdef OEM_FLASHER
+        aboot_cmdline = get_dev_tree_cmdline((void*)(ABOOT_FORCE_TAGS_ADDR));
+        sn_ptr = strstr(aboot_cmdline, "androidboot.serialno=");
+        if (sn_ptr != NULL)
+        {
+            char *end_ptr;
+            memcpy(sn_buf, sn_ptr + strlen("androidboot.serialno="), sizeof(sn_buf));
+            end_ptr = strstr(sn_ptr, " ");
+            if (end_ptr != NULL)
+            {
+                sn_buf[end_ptr - (sn_ptr + strlen("androidboot.serialno="))] = 0;
+            }
+            else
+            {
+                sn_buf[12] = 0;
+            }
+        }
+	else
+        {
+            target_serialno((unsigned char *) sn_buf);
+        }
+#else
 	target_serialno((unsigned char *) sn_buf);
+#endif
 	dprintf(SPEW,"serial number: %s\n",sn_buf);
 
 	memset(display_panel_buf, '\0', MAX_PANEL_BUF_SIZE);
@@ -3678,7 +3731,7 @@ normal_boot:
 	partition_dump();
 
 	/* initialize and start fastboot */
-	fastboot_init(target_get_scratch_address(), target_get_max_flash_size());
+	fastboot_init(target_get_scratch_address(), target_get_max_flash_size(), sn_buf);
 #if FBCON_DISPLAY_MSG
 	display_fastboot_menu_thread();
 #endif

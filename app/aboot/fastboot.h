@@ -34,7 +34,7 @@
 #define MAX_RSP_SIZE            64
 #define MAX_GET_VAR_NAME_SIZE   256
 
-int fastboot_init(void *xfer_buffer, unsigned max);
+int fastboot_init(void *xfer_buffer, unsigned max, char *serialno);
 void fastboot_stop(void);
 
 /* register a command handler

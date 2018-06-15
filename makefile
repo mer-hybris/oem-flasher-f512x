@@ -105,6 +105,13 @@ ifeq ($(VERIFIED_BOOT),1)
   endif
 endif
 
+ifeq ($(OEM_FLASHER),1)
+  DEFINES += OEM_FLASHER=1
+  ifeq ($(OEM_FLASHER_F5121),1)
+    DEFINES += OEM_FLASHER_F5121=1
+  endif
+endif
+
 ifeq ($(USER_BUILD_VARIANT),true)
   DEFINES += USER_BUILD_VARIANT=1
 endif

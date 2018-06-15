@@ -68,11 +68,21 @@ static void fastboot_notify(struct udc_gadget *gadget, unsigned event);
 static struct udc_endpoint *fastboot_endpoints[2];
 
 static struct udc_device surf_udc_device = {
+#ifdef OEM_FLASHER_F5121
+	.vendor_id    = 0x0fce,
+	.product_id   = 0x0dde,
+	.version_id   = 0x0100,
+	.manufacturer = "Sony",
+	.product      = "S1Boot Fastboot",
+#elif OEM_FLASHER
+#error "OEM_FLASHER requires a device definition, e.g. OEM_FLASHER_F5121=1"
+#else
 	.vendor_id    = 0x18d1,
 	.product_id   = 0xD00D,
 	.version_id   = 0x0100,
 	.manufacturer = "Google",
 	.product      = "Android",
+#endif
 };
 
 static struct udc_gadget fastboot_gadget = {
@@ -131,6 +141,16 @@ static struct fastboot_cmd *cmdlist;
 void fastboot_register(const char *prefix,
 		       void (*handle)(const char *arg, void *data, unsigned sz))
 {
+#ifdef OEM_FLASHER
+	// whitelist of allowed commands
+	if (!(	strncmp(prefix, "reboot-bootloader", strlen("reboot-bootloader")) == 0 || // useful?
+		strncmp(prefix, "getvar", strlen("getvar")) == 0 || // required for flash
+		strncmp(prefix, "download", strlen("download")) == 0 || // required for flash
+		strncmp(prefix, "flash", strlen("flash")) == 0))
+	{
+		return;
+	}
+#endif
 	struct fastboot_cmd *cmd;
 	cmd = malloc(sizeof(*cmd));
 	if (cmd) {
@@ -418,9 +438,12 @@ void fastboot_info(const char *reason)
 	usb_if.usb_write(response, strlen((const char *)response));
 }
 
+#define FASTBOOT_MODE        0x77665500
+
 void fastboot_fail(const char *reason)
 {
 	fastboot_ack("FAIL", reason);
+	reboot_device(FASTBOOT_MODE);
 }
 
 void fastboot_okay(const char *info)
@@ -555,7 +578,7 @@ static void fastboot_notify(struct udc_gadget *gadget, unsigned event)
 	}
 }
 
-int fastboot_init(void *base, unsigned size)
+int fastboot_init(void *base, unsigned size, char *serialno)
 {
 	char sn_buf[13];
 	thread_t *thr;
@@ -567,8 +590,15 @@ int fastboot_init(void *base, unsigned size)
 	/* target specific initialization before going into fastboot. */
 	target_fastboot_init();
 
-	/* setup serialno */
-	target_serialno((unsigned char *) sn_buf);
+	if (serialno)
+	{
+		memcpy(sn_buf, serialno, 13);
+	}
+	else
+	{
+		/* setup serialno */
+		target_serialno((unsigned char *) sn_buf);
+	}
 	dprintf(SPEW,"serial number: %s\n",sn_buf);
 	surf_udc_device.serialno = sn_buf;
 
