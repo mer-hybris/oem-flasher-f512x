@@ -1,0 +1,50 @@
+/dts-v1/;
+
+/ {
+	compatible = "qcom,msm8956";
+	qcom,msm-id = <266 0x10001>;
+	qcom,board-id = <8 0>;
+
+	cpus {
+		cpu-map {
+
+			cluster1 {
+
+				core0 {
+				};
+
+				core1 {
+				};
+
+				core2 {
+				};
+
+				core3 {
+				};
+			};
+		};
+
+		cpu@100 {
+			device_type = "cpu";
+		};
+
+		cpu@101 {
+			device_type = "cpu";
+		};
+
+		cpu@102 {
+			device_type = "cpu";
+		};
+
+		cpu@103 {
+			device_type = "cpu";
+		};
+	};
+
+	chosen {
+	};
+
+	memory {
+	};
+};
+
