@@ -123,6 +123,14 @@ static int bootstrap2(void *arg)
 {
 	dprintf(SPEW, "top of bootstrap2()\n");
 
+	// We are booting into a new fastboot mode, after a previous one with the
+	// same parameters was active. To make sure all platforms (Windows...) detect
+	// this properly, wait here for the host to register the disconnect and
+	// reconnect without issues.
+#ifdef OEM_FLASHER
+	thread_sleep(10000);
+#endif
+
 	arch_init();
 
 	// XXX put this somewhere else
