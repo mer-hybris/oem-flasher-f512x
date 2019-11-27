@@ -107,8 +107,6 @@ endif
 #SCM call before entering DLOAD mode
 DEFINES += PLATFORM_USE_SCM_DLOAD=1
 
-CFLAGS += -Werror
-
 DEFINES += USE_TARGET_HS200_DELAY=1
 
 #enable battery voltage check
